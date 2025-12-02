@@ -12,6 +12,6 @@ export const environment = {
       measurementId: 'G-K7YQCPCZZ3',
     },
   },
-  geminiApiKey: 'your-gemini-api-key-here',
+  geminiApiKey: 'AIzaSyDiUNQ3_o6_Azm5PivTjBHc-3P2GpsxB4I',
   mockServerUrl: 'http://localhost:3001',
 };
