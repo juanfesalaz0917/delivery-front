@@ -1,0 +1,7 @@
+<app-layout [showSidebar]="showSidebar">
+    <router-outlet></router-outlet>
+</app-layout>
+
+@if (!showSidebar) {
+<router-outlet></router-outlet>
+}

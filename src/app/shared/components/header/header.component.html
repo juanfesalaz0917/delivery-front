@@ -1,0 +1,49 @@
+<header class="fixed top-0 right-0 h-16 bg-card border-border z-30 transition-all duration-300 backdrop-blur-sm shadow-sm"
+      [class.left-64]="sidebarOpen && !isMobile()"
+      [class.left-20]="!sidebarOpen && !isMobile()"
+      [class.left-0]="isMobile()"
+    >
+      <div class="h-full px-4 lg:px-6 flex items-center justify-between">
+        <div class="flex items-center gap-4">
+          <button
+            (click)="toggleSidebar.emit()"
+            class="p-2 rounded-lg hover:bg-muted text-muted-foreground hover:text-foreground transition-colors"
+          >
+            <svg class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 6h16M4 12h16M4 18h16" />
+            </svg>
+          </button>
+          <h1 class="text-lg font-semibold text-foreground hidden md:block">
+            Plataforma de Gestión de Domicilios
+          </h1>
+        </div>
+
+        <div class="flex items-center gap-4">
+          <app-notification-panel></app-notification-panel>
+
+          <div class="flex items-center gap-3">
+            @if (user$ | async; as user) {
+              @if (user.photoURL) {
+                <img
+                  [src]="user.photoURL"
+                  [alt]="user.displayName || user.email || 'User'"
+                  class="w-10 h-10 rounded-full object-cover border-2 border-primary"
+                />
+              } @else {
+                <div class="w-10 h-10 rounded-full bg-primary flex items-center justify-center text-primary-foreground font-semibold">
+                  {{ (user.displayName || user.email || 'U').charAt(0).toUpperCase() }}
+                </div>
+              }
+              <div class="hidden md:block">
+                <p class="text-sm font-medium text-foreground">{{ user.displayName || 'Usuario' }}</p>
+                <p class="text-xs text-muted-foreground">{{ user.email || 'Sin email' }}</p>
+              </div>
+            } @else {
+              <div class="w-10 h-10 rounded-full bg-muted flex items-center justify-center text-muted-foreground font-semibold">
+                U
+              </div>
+            }
+          </div>
+        </div>
+      </div>
+    </header>

@@ -1,0 +1,93 @@
+<div class="p-6 max-w-2xl mx-auto">
+    <div class="mb-6">
+        <a routerLink="/customers" class="inline-flex items-center text-gray-600 hover:text-gray-900 mb-4">
+            <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+            </svg>
+            Volver a clientes
+        </a>
+        <h1 class="text-2xl font-bold text-gray-900">
+            {{ isEditMode() ? 'Editar Cliente' : 'Nuevo Cliente' }}
+        </h1>
+        <p class="text-gray-600 mt-1">
+            {{ isEditMode() ? 'Modifica la información del cliente' : 'Completa la información para registrar un nuevo
+            cliente' }}
+        </p>
+    </div>
+
+    <form [formGroup]="form" (ngSubmit)="onSubmit()" class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+        <div class="space-y-6">
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                    <label for="name" class="block text-sm font-medium text-gray-700 mb-1">
+                        Nombre <span class="text-red-500">*</span>
+                    </label>
+                    <input type="text" id="name" formControlName="name"
+                        class="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                        [class.border-red-500]="hasError('name', 'required') || hasError('name', 'minlength')"
+                        [class.border-gray-300]="!hasError('name', 'required') && !hasError('name', 'minlength')"
+                        placeholder="Nombre" />
+                    @if (hasError('name', 'required')) {
+                    <p class="mt-1 text-sm text-red-500">El nombre es requerido</p>
+                    }
+                    @if (hasError('name', 'minlength')) {
+                    <p class="mt-1 text-sm text-red-500">El nombre debe tener al menos 2 caracteres</p>
+                    }
+                </div>
+                <div>
+                    <label for="email" class="block text-sm font-medium text-gray-700 mb-1">
+                        Email <span class="text-red-500">*</span>
+                    </label>
+                    <input type="email" id="email" formControlName="email"
+                        class="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                        [class.border-red-500]="hasError('email', 'required') || hasError('email', 'email')"
+                        [class.border-gray-300]="!hasError('email', 'required') && !hasError('email', 'email')"
+                        placeholder="correo@ejemplo.com" />
+                    @if (hasError('email', 'required')) {
+                    <p class="mt-1 text-sm text-red-500">El email es requerido</p>
+                    }
+                    @if (hasError('email', 'email')) {
+                    <p class="mt-1 text-sm text-red-500">Ingrese un email válido</p>
+                    }
+                </div>
+            </div>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                    <label for="phone" class="block text-sm font-medium text-gray-700 mb-1">
+                        Teléfono <span class="text-red-500">*</span>
+                    </label>
+                    <input type="tel" id="phone" formControlName="phone"
+                        class="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                        [class.border-red-500]="hasError('phone', 'required') || hasError('phone', 'pattern')"
+                        [class.border-gray-300]="!hasError('phone', 'required') && !hasError('phone', 'pattern')"
+                        placeholder="3001234567" />
+                    @if (hasError('phone', 'required')) {
+                    <p class="mt-1 text-sm text-red-500">El teléfono es requerido</p>
+                    }
+                    @if (hasError('phone', 'pattern')) {
+                    <p class="mt-1 text-sm text-red-500">Ingrese un número válido (7-15 dígitos)</p>
+                    }
+                </div>
+            </div>
+        </div>
+
+        <div class="flex items-center justify-end gap-4 mt-8 pt-6 border-t border-gray-200">
+            <a routerLink="/customers"
+                class="px-4 py-2 text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors font-medium">
+                Cancelar
+            </a>
+            <button type="submit" [disabled]="loading()"
+                class="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium disabled:opacity-50 disabled:cursor-not-allowed flex items-center">
+                @if (loading()) {
+                <svg class="animate-spin -ml-1 mr-2 h-4 w-4 text-white" fill="none" viewBox="0 0 24 24">
+                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                    <path class="opacity-75" fill="currentColor"
+                        d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z">
+                    </path>
+                </svg>
+                }
+                {{ isEditMode() ? 'Actualizar' : 'Crear' }} Cliente
+            </button>
+        </div>
+    </form>
+</div>
