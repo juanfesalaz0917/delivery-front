@@ -31,6 +31,30 @@ export const routes: Routes = [
     canActivate: [authGuard],
   },
   {
+    path: 'restaurants',
+    loadChildren: () =>
+      import('./features/restaurants/restaurants.routes').then(
+        (m) => m.RESTAURANTS_ROUTES,
+      ),
+    canActivate: [authGuard],
+  },
+  {
+    path: 'menus',
+    loadChildren: () =>
+      import('./features/menus/menus.routes').then(
+        (m) => m.MENUS_ROUTES,
+      ),
+    canActivate: [authGuard],
+  },
+  {
+    path: 'products',
+    loadChildren: () =>
+      import('./features/products/products.routes').then(
+        (m) => m.PRODUCTS_ROUTES,
+      ),
+    canActivate: [authGuard],
+  },
+  {
     path: '**',
     redirectTo: 'dashboard',
   },

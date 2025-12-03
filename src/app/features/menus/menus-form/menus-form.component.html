@@ -1,0 +1,305 @@
+<div class="min-h-screen bg-gray-50 py-8">
+  <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+    <!-- Header -->
+    <div class="mb-8">
+      <div class="flex items-center gap-4 mb-4">
+        <a
+          routerLink="/menus"
+          class="text-gray-600 hover:text-gray-900 p-2 hover:bg-gray-100 rounded-lg transition-colors"
+        >
+          <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
+          </svg>
+        </a>
+        <div>
+          <h1 class="text-3xl font-bold text-gray-900">
+            {{ isEditMode() ? 'Editar Menú' : 'Nuevo Menú' }}
+          </h1>
+          <p class="mt-2 text-sm text-gray-600">
+            {{ isEditMode() ? 'Actualiza la información del menú' : 'Crea un nuevo menú para un restaurante' }}
+          </p>
+        </div>
+      </div>
+    </div>
+
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      <!-- Main Form -->
+      <div class="lg:col-span-2 space-y-6">
+        <div class="bg-white rounded-lg shadow-lg overflow-hidden">
+          <form [formGroup]="menuForm" (ngSubmit)="onSubmit()">
+            <div class="p-6 sm:p-8 space-y-6">
+              <!-- Restaurant Select -->
+              <div>
+                <label for="restaurantId" class="block text-sm font-medium text-gray-700 mb-2">
+                  Restaurante <span class="text-red-500">*</span>
+                </label>
+                <select
+                  id="restaurantId"
+                  formControlName="restaurantId"
+                  class="w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+                  [class.border-red-500]="isFieldInvalid('restaurantId')"
+                  [class.border-gray-300]="!isFieldInvalid('restaurantId')"
+                >
+                  <option value="">Selecciona un restaurante</option>
+                  <option *ngFor="let restaurant of restaurants()" [value]="restaurant.id">
+                    {{ restaurant.name }}
+                  </option>
+                </select>
+                <p *ngIf="isFieldInvalid('restaurantId')" class="mt-2 text-sm text-red-600">
+                  {{ getFieldError('restaurantId') }}
+                </p>
+                <p *ngIf="loadingRestaurants()" class="mt-2 text-sm text-gray-500">
+                  Cargando restaurantes...
+                </p>
+              </div>
+
+              <!-- Name Field -->
+              <div>
+                <label for="name" class="block text-sm font-medium text-gray-700 mb-2">
+                  Nombre del Menú <span class="text-red-500">*</span>
+                </label>
+                <input
+                  id="name"
+                  type="text"
+                  formControlName="name"
+                  placeholder="Ej: Menú Ejecutivo, Combo Familiar"
+                  class="w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+                  [class.border-red-500]="isFieldInvalid('name')"
+                  [class.border-gray-300]="!isFieldInvalid('name')"
+                />
+                <p *ngIf="isFieldInvalid('name')" class="mt-2 text-sm text-red-600">
+                  {{ getFieldError('name') }}
+                </p>
+              </div>
+
+              <!-- Price and Available Grid -->
+              <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <!-- Price Field -->
+                <div>
+                  <label for="price" class="block text-sm font-medium text-gray-700 mb-2">
+                    Precio <span class="text-red-500">*</span>
+                  </label>
+                  <div class="relative">
+                    <span class="absolute left-4 top-3.5 text-gray-500">$</span>
+                    <input
+                      id="price"
+                      type="number"
+                      formControlName="price"
+                      placeholder="0.00"
+                      min="0"
+                      step="0.01"
+                      class="w-full pl-8 pr-4 py-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+                      [class.border-red-500]="isFieldInvalid('price')"
+                      [class.border-gray-300]="!isFieldInvalid('price')"
+                    />
+                  </div>
+                  <p *ngIf="isFieldInvalid('price')" class="mt-2 text-sm text-red-600">
+                    {{ getFieldError('price') }}
+                  </p>
+                </div>
+
+                <!-- Available Toggle -->
+                <div>
+                  <label class="block text-sm font-medium text-gray-700 mb-2">
+                    Disponibilidad
+                  </label>
+                  <div class="flex items-center h-[50px]">
+                    <label class="relative inline-flex items-center cursor-pointer">
+                      <input
+                        type="checkbox"
+                        formControlName="available"
+                        class="sr-only peer"
+                      />
+                      <div class="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+                      <span class="ml-3 text-sm font-medium text-gray-700">
+                        {{ menuForm.get('available')?.value ? 'Disponible' : 'No disponible' }}
+                      </span>
+                    </label>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Description Field -->
+              <div>
+                <label for="description" class="block text-sm font-medium text-gray-700 mb-2">
+                  Descripción
+                </label>
+                <textarea
+                  id="description"
+                  formControlName="description"
+                  rows="3"
+                  placeholder="Describe el menú, qué incluye, ingredientes especiales, etc."
+                  class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all resize-none"
+                ></textarea>
+              </div>
+            </div>
+
+            <!-- Form Actions -->
+            <div class="bg-gray-50 px-6 py-4 sm:px-8 flex flex-col-reverse sm:flex-row sm:justify-end gap-3">
+              <button
+                type="button"
+                (click)="onCancel()"
+                [disabled]="loading()"
+                class="w-full sm:w-auto px-6 py-3 border border-gray-300 text-sm font-medium rounded-lg text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                Cancelar
+              </button>
+              <button
+                type="submit"
+                [disabled]="loading() || menuForm.invalid"
+                class="w-full sm:w-auto px-6 py-3 border border-transparent text-sm font-medium rounded-lg text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center"
+              >
+                <svg
+                  *ngIf="loading()"
+                  class="animate-spin -ml-1 mr-3 h-5 w-5 text-white"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                >
+                  <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                  <path
+                    class="opacity-75"
+                    fill="currentColor"
+                    d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                  ></path>
+                </svg>
+                {{ loading() ? 'Guardando...' : (isEditMode() ? 'Actualizar Menú' : 'Crear Menú') }}
+              </button>
+            </div>
+          </form>
+        </div>
+
+        <!-- Products Selection Card -->
+        <div class="bg-white rounded-lg shadow-lg overflow-hidden">
+          <div class="p-6 border-b border-gray-200">
+            <h2 class="text-lg font-semibold text-gray-900">Productos del Menú</h2>
+            <p class="mt-1 text-sm text-gray-600">Selecciona los productos que incluye este menú</p>
+          </div>
+
+          <div class="p-6">
+            <!-- Loading Products -->
+            <div *ngIf="loadingProducts()" class="flex justify-center py-8">
+              <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+            </div>
+
+            <!-- Products Grid -->
+            <div *ngIf="!loadingProducts() && products().length > 0" class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <button
+                *ngFor="let product of products()"
+                type="button"
+                (click)="toggleProduct(product)"
+                class="text-left p-4 rounded-lg border-2 transition-all"
+                [class.border-blue-500]="isProductSelected(product.id!.toString())"
+                [class.bg-blue-50]="isProductSelected(product.id!.toString())"
+                [class.border-gray-200]="!isProductSelected(product.id!.toString())"
+                [class.hover:border-gray-300]="!isProductSelected(product.id!.toString())"
+              >
+                <div class="flex items-center justify-between">
+                  <div class="flex-1">
+                    <h3 class="font-medium text-gray-900">{{ product.name }}</h3>
+                    <p class="text-sm text-gray-500 mt-1">${{ product.price }}</p>
+                  </div>
+                  <div
+                    class="flex-shrink-0 w-6 h-6 rounded border-2 flex items-center justify-center"
+                    [class.border-blue-500]="isProductSelected(product.id!.toString())"
+                    [class.bg-blue-500]="isProductSelected(product.id!.toString())"
+                    [class.border-gray-300]="!isProductSelected(product.id!.toString())"
+                  >
+                    <svg
+                      *ngIf="isProductSelected(product.id!.toString())"
+                      class="w-4 h-4 text-white"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7" />
+                    </svg>
+                  </div>
+                </div>
+              </button>
+            </div>
+
+            <!-- Empty Products -->
+            <div *ngIf="!loadingProducts() && products().length === 0" class="text-center py-8">
+              <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
+              </svg>
+              <p class="mt-4 text-sm text-gray-500">No hay productos disponibles</p>
+              <a
+                routerLink="/products/new"
+                class="mt-3 inline-block text-sm text-blue-600 hover:text-blue-700 font-medium"
+              >
+                Crear producto
+              </a>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Sidebar -->
+      <div class="lg:col-span-1 space-y-6">
+        <!-- Selected Products Summary -->
+        <div class="bg-white rounded-lg shadow p-6">
+          <h3 class="text-sm font-medium text-gray-900 mb-3">Resumen</h3>
+          <div class="space-y-3">
+            <div class="flex justify-between text-sm">
+              <span class="text-gray-600">Productos seleccionados:</span>
+              <span class="font-semibold text-gray-900">{{ selectedProducts().length }}</span>
+            </div>
+            <div *ngIf="menuForm.get('restaurantId')?.value" class="pt-3 border-t border-gray-200">
+              <p class="text-xs text-gray-500 mb-1">Restaurante:</p>
+              <p class="text-sm font-medium text-gray-900">
+                {{ getRestaurantName(menuForm.get('restaurantId')?.value) }}
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Selected Products List -->
+        <div *ngIf="selectedProducts().length > 0" class="bg-white rounded-lg shadow p-6">
+          <h3 class="text-sm font-medium text-gray-900 mb-3">Productos Incluidos</h3>
+          <ul class="space-y-2">
+            <li
+              *ngFor="let product of selectedProducts()"
+              class="flex items-center justify-between text-sm p-2 bg-gray-50 rounded"
+            >
+              <span class="text-gray-700">{{ product.name }}</span>
+              <button
+                type="button"
+                (click)="toggleProduct(product)"
+                class="text-red-600 hover:text-red-700"
+              >
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </li>
+          </ul>
+        </div>
+
+        <!-- Help Card -->
+        <div class="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-lg shadow p-6 border border-blue-100">
+          <h3 class="text-sm font-medium text-gray-900 mb-3 flex items-center gap-2">
+            <svg class="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+            Información
+          </h3>
+          <ul class="text-sm text-gray-700 space-y-2">
+            <li class="flex items-start gap-2">
+              <span class="text-blue-600 mt-0.5">•</span>
+              <span>Selecciona el restaurante al que pertenece el menú</span>
+            </li>
+            <li class="flex items-start gap-2">
+              <span class="text-blue-600 mt-0.5">•</span>
+              <span>Elige los productos que incluye este menú</span>
+            </li>
+            <li class="flex items-start gap-2">
+              <span class="text-blue-600 mt-0.5">•</span>
+              <span>El precio es del menú completo, no de cada producto</span>
+            </li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
