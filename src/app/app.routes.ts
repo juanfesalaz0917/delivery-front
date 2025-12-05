@@ -55,6 +55,30 @@ export const routes: Routes = [
     canActivate: [authGuard],
   },
   {
+    path: 'orders',
+    loadChildren: () =>
+      import('./features/orders/orders.routes').then(
+        (m) => m.ORDERS_ROUTES,
+      ),
+    canActivate: [authGuard],
+  },
+  {
+    path: 'motorcycles',
+    loadChildren: () =>
+      import('./features/motorcycles/motorcycles.routes').then(
+        (m) => m.MOTORCYCLE_ROUTES,
+      ),
+    canActivate: [authGuard],
+  },
+  {
+    path: 'drivers',
+    loadChildren: () =>
+      import('./features/drivers/drivers.routes').then(
+        (m) => m.DRIVERS_ROUTES,
+      ),
+    canActivate: [authGuard],
+  },
+  {
     path: '**',
     redirectTo: 'dashboard',
   },

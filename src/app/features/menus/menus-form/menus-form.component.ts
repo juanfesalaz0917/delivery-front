@@ -18,9 +18,9 @@ export class MenusFormComponent implements OnInit {
   private readonly fb = inject(FormBuilder);
   private readonly router = inject(Router);
   private readonly route = inject(ActivatedRoute);
-  private readonly menusService = inject(MenuService);
-  private readonly restaurantsService = inject(RestaurantService);
-  private readonly productsService = inject(ProductService);
+  private readonly menuService = inject(MenuService);
+  private readonly restaurantService = inject(RestaurantService);
+  private readonly productService = inject(ProductService);
   private readonly notificationService = inject(NotificationService);
 
   menuForm!: FormGroup;
@@ -65,7 +65,7 @@ export class MenusFormComponent implements OnInit {
 
   loadRestaurants(): void {
     this.loadingRestaurants.set(true);
-    this.restaurantsService.getAll(1, 100).subscribe({
+    this.restaurantService.getAll(1, 100).subscribe({
       next: (restaurants) => {
         this.restaurants.set(restaurants);
         this.loadingRestaurants.set(false);
@@ -79,7 +79,7 @@ export class MenusFormComponent implements OnInit {
 
   loadProducts(): void {
     this.loadingProducts.set(true);
-    this.productsService.getAll(1, 100).subscribe({
+    this.productService.getAll(1, 100).subscribe({
       next: (products) => {
         this.products.set(products);
         this.loadingProducts.set(false);
@@ -93,19 +93,16 @@ export class MenusFormComponent implements OnInit {
 
   loadMenu(id: string): void {
     this.loading.set(true);
-    this.menusService.getByRestaurantId(id).subscribe({
+    this.menuService.getByRestaurantId(id).subscribe({
       next: (menu) => {
         this.menuForm.patchValue({
           id: menu.id,
           restaurantId: menu.restaurant_id,
-          productIds: menu.product_id,
           price: menu.price,
           available: menu.availiability,
-          products : menu.product,
-          restaurant : menu.restaurant,
         });
         if (menu.product) {
-          this.selectedProducts.set(Array.isArray(menu.product) ? menu.product : [menu.product]);
+          this.selectedProducts.set(menu.product ? [menu.product] : []); // Ajuste aquí
         }
         this.loading.set(false);
       },
@@ -129,7 +126,7 @@ export class MenusFormComponent implements OnInit {
   }
 
   isProductSelected(productId: string): boolean {
-    return this.selectedProducts().some(p => p.id.toString() === productId);
+    return this.selectedProducts().some(p => p.id === Number(productId));
   }
 
   onSubmit(): void {
@@ -138,15 +135,28 @@ export class MenusFormComponent implements OnInit {
       return;
     }
 
+    if (this.selectedProducts().length === 0) {
+      this.notificationService.error('Debes seleccionar al menos un producto');
+      return;
+    }
+
     this.loading.set(true);
+    
+    // Obtener el primer producto seleccionado (según la estructura del backend)
+    const firstProductId = this.selectedProducts()[0]?.id;
+    
     const menuData: Menu = {
       ...this.menuForm.value,
-      productIds: this.selectedProducts().map(p => p.id),
+      product_id: firstProductId, // Solo un ID de producto, no un array
+      restaurant_id: Number(this.menuForm.value.restaurantId),
+      availiability: this.menuForm.value.available,
     };
 
+    // Si necesitas asociar múltiples productos, deberás crear múltiples menús
+    // o modificar el backend para aceptar un array
     const request = this.isEditMode() && this.menuId
-      ? this.menusService.update(this.menuId, menuData)
-      : this.menusService.create(menuData);
+      ? this.menuService.update(this.menuId, menuData)
+      : this.menuService.create(menuData);
 
     request.subscribe({
       next: () => {
@@ -157,7 +167,8 @@ export class MenusFormComponent implements OnInit {
         );
         this.router.navigate(['/menus']);
       },
-      error: () => {
+      error: (err) => {
+        console.error('Error al guardar menú:', err);
         this.notificationService.error(
           this.isEditMode()
             ? 'Error al actualizar el menú'
@@ -186,6 +197,6 @@ export class MenusFormComponent implements OnInit {
   }
 
   getRestaurantName(restaurantId: string): string {
-    return this.restaurants().find(r => r.id.toString() === restaurantId)?.name || 'Desconocido';
+    return this.restaurants().find(r => r.id === Number(restaurantId))?.name || 'Desconocido';
   }
 }

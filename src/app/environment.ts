@@ -1,5 +1,6 @@
 export const environment = {
   apiUrl: 'http://localhost:5000',
+  socketUrl: 'http://localhost:3002',
   production: false,
   oauth: {
     firebase: {

@@ -1,0 +1,55 @@
+<div class="min-h-screen bg-gray-50 py-8">
+  <div class="max-w-7xl mx-auto px-4">
+
+    <div class="flex justify-between mb-6">
+      <h1 class="text-3xl font-bold">🏍️ Motocicletas</h1>
+      <a routerLink="/motorcycles/new" class="px-4 py-2 bg-blue-600 text-white rounded">
+        Nueva Motocicleta
+      </a>
+    </div>
+
+    <input
+      type="text"
+      placeholder="Buscar por placa..."
+      class="w-full mb-4 p-3 border rounded"
+      (input)="onSearch($any($event.target).value)"
+    />
+
+    <div *ngIf="loading()" class="text-center py-10">Cargando...</div>
+
+    <div *ngIf="!loading()" class="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+      <div *ngFor="let m of filteredMotorcycles()" class="bg-white p-6 rounded shadow">
+
+        <div class="flex justify-between items-center mb-3">
+          <h3 class="font-bold text-lg">{{ m.license_plate }}</h3>
+          <span [class]="'px-2 py-1 rounded text-xs ' + getStatusColor(m.status)">
+            {{ getStatusLabel(m.status) }}
+          </span>
+        </div>
+
+        <p><b>Marca:</b> {{ m.brand }}</p>
+        <p><b>Año:</b> {{ m.year }}</p>
+
+        <div class="flex gap-2 mt-4">
+          <a [routerLink]="['/motorcycles/edit', m.id]" class="flex-1 text-center px-3 py-2 border rounded">
+            Editar
+          </a>
+
+          <button (click)="confirmDelete(m)" class="px-3 py-2 bg-red-600 text-white rounded">
+            Eliminar
+          </button>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<app-confirm-dialog
+  *ngIf="showDeleteDialog()"
+  [title]="'Eliminar Motocicleta'"
+  [message]="'¿Eliminar la motocicleta ' + motorcycleToDelete()?.license_plate + '?'"
+  (confirmed)="onDeleteConfirmed()"
+  (cancelled)="onDeleteCancelled()"
+></app-confirm-dialog>
+
