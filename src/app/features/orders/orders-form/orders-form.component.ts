@@ -2,15 +2,15 @@ import { Component, inject, signal, type OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Router, ActivatedRoute, RouterLink } from '@angular/router';
 import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
-import { finalize } from 'rxjs';
+
+import type { Order, Customer, Restaurant, Menu, Product, Motorcycle } from '../../../core/models';
+import { NotificationService } from '../../../core/services/notification.service';
 import { OrderService } from '../../../core/services/order.service';
 import { CustomersService } from '../../../core/services/customers.service';
 import { RestaurantService } from '../../../core/services/restaurant.service';
-import { MenuService } from '../../../core/services/menu.service';
 import { ProductService } from '../../../core/services/product.service';
-import type { Order, Customer, Restaurant, Menu, Product, Motorcycle } from '../../../core/models';
-import { NotificationService } from '../../../core/services/notification.service';
 import { MotorcycleService } from '../../../core/services/motorcycle.service';
+import { MenuService } from '../../../core/services/menu.service';
 
 @Component({
   selector: 'app-orders-form',
@@ -41,16 +41,12 @@ export class OrdersFormComponent implements OnInit {
   menus = signal<Menu[]>([]);
   products = signal<Product[]>([]);
   motorcycles = signal<Motorcycle[]>([]);
-  filteredMenus = signal<Menu[]>([]);
   
   loadingCustomers = signal(false);
   loadingRestaurants = signal(false);
   loadingMenus = signal(false);
   loadingProducts = signal(false);
   loadingMotorcycles = signal(false);
-  
-  // Productos/Menús seleccionados
-  selectedItems = signal<Array<{ type: 'menu' | 'product', item: Menu | Product, quantity: number }>>([]);
   
   orderStatuses = ['pending', 'confirmed', 'preparing', 'ready', 'delivered', 'cancelled'];
 
@@ -68,19 +64,17 @@ export class OrdersFormComponent implements OnInit {
       this.isEditMode.set(true);
       this.loadOrder(this.orderId);
     }
-    
-    // Escuchar cambios en el restaurante seleccionado
-    this.orderForm.get('restaurant_id')?.valueChanges.subscribe(restaurant_id=> {
-      this.filterMenusByRestaurant(restaurant_id);
-    });
   }
 
   initForm(): void {
     this.orderForm = this.fb.group({
       customer_id: ['', Validators.required],
       restaurant_id: ['', Validators.required],
-      motorcycle_id: [''], // El motociclista se asigna automáticamente, pero se incluye la referencia
+      menu_id: [''],
+      product_id: [''],
+      motorcycle_id: [''], // Opcional - se asigna automáticamente si no se selecciona
       status: ['pending', Validators.required],
+      total: [0, [Validators.required, Validators.min(0)]],
       notes: [''],
     });
   }
@@ -144,103 +138,38 @@ export class OrdersFormComponent implements OnInit {
   loadMotorcycles(): void {
     this.loadingMotorcycles.set(true);
     this.motorcyclesService.getAll(1, 100).subscribe({
-      next: (motorcycle) => {
-        this.motorcycles.set(motorcycle);
+      next: (motorcycles) => {
+        this.motorcycles.set(motorcycles);
         this.loadingMotorcycles.set(false);
       },
       error: () => {
-        this.notificationService.error('Error al cargar motociclistas');
+        this.notificationService.error('Error al cargar motocicletas');
         this.loadingMotorcycles.set(false);
       },
     });
-  }
-
-  filterMenusByRestaurant(restaurant_id: string): void {
-    if (!restaurant_id) {
-      this.filteredMenus.set([]);
-      return;
-    }
-    const filtered = this.menus().filter(m => m.restaurant_id === +restaurant_id);
-    this.filteredMenus.set(filtered);
   }
 
   loadOrder(id: string): void {
     this.loading.set(true);
-    this.ordersService.getById(id).pipe(
-      finalize(() => this.loading.set(false))
-    ).subscribe({
+    this.ordersService.getById(id).subscribe({
       next: (order) => {
         this.orderForm.patchValue({
           customer_id: order.customer_id,
-          restaurant_id: order.menu.restaurant,
+          restaurant_id: order.menu.restaurant_id,
+          menu_id: order.menu_id,
+          product_id: order.menu.product_id,
           motorcycle_id: order.motorcycle_id,
           status: order.status,
+          total: order.total_price,
         });
+        this.loading.set(false);
       },
       error: () => {
         this.notificationService.error('Error al cargar la orden');
+        this.loading.set(false);
         this.router.navigate(['/orders']);
       },
     });
-  }
-
-  addMenu(menuId: string): void {
-    const menu = this.filteredMenus().find(m => String(m.id) === menuId);
-    if (!menu) return;
-    
-    const exists = this.selectedItems().find(
-      item => item.type === 'menu' && item.item.id === +menuId
-    );
-    
-    if (exists) {
-      this.notificationService.error('Este menú ya está agregado');
-      return;
-    }
-    
-    this.selectedItems.set([
-      ...this.selectedItems(),
-      { type: 'menu', item: menu, quantity: 1 }
-    ]);
-  }
-
-  addProduct(productId: string): void {
-    const product = this.products().find(p => p.id === +productId);
-    if (!product) return;
-    
-    const exists = this.selectedItems().find(
-      item => item.type === 'product' && item.item.id === +productId
-    );
-    
-    if (exists) {
-      this.notificationService.error('Este producto ya está agregado');
-      return;
-    }
-    
-    this.selectedItems.set([
-      ...this.selectedItems(),
-      { type: 'product', item: product, quantity: 1 }
-    ]);
-  }
-
-  removeItem(index: number): void {
-    this.selectedItems.set(this.selectedItems().filter((_, i) => i !== index));
-  }
-
-  updateQuantity(index: number, quantity: number): void {
-    if (quantity < 1) return;
-    const items = [...this.selectedItems()];
-    items[index].quantity = quantity;
-    this.selectedItems.set(items);
-  }
-
-  calculateTotal(): number {
-    return this.selectedItems().reduce((total, item) => {
-      return total + (item.item.price * item.quantity);
-    }, 0);
-  }
-
-  getTotalQuantity(): number {
-    return this.selectedItems().reduce((sum, item) => sum + (item.quantity || 0), 0);
   }
 
   onSubmit(): void {
@@ -249,25 +178,20 @@ export class OrdersFormComponent implements OnInit {
       return;
     }
 
-    if (this.selectedItems().length === 0) {
-      this.notificationService.error('Debes agregar al menos un producto o menú');
+    // Validar que al menos un menú o producto esté seleccionado
+    if (!this.orderForm.value.menu_id && !this.orderForm.value.product_id) {
+      this.notificationService.error('Debes seleccionar al menos un menú o producto');
       return;
     }
 
     this.loading.set(true);
-    const orderData: Order = {
-      ...this.orderForm.value,
-      items: this.selectedItems(),
-      total: this.calculateTotal(),
-    };
+    const orderData: Order = this.orderForm.value;
 
     const request = this.isEditMode() && this.orderId
       ? this.ordersService.update(this.orderId, orderData)
       : this.ordersService.create(orderData);
 
-    request.pipe(
-      finalize(() => this.loading.set(false))
-    ).subscribe({
+    request.subscribe({
       next: () => {
         this.notificationService.success(
           this.isEditMode() 
@@ -282,6 +206,7 @@ export class OrdersFormComponent implements OnInit {
             ? 'Error al actualizar la orden'
             : 'Error al crear la orden'
         );
+        this.loading.set(false);
       },
     });
   }
@@ -293,6 +218,7 @@ export class OrdersFormComponent implements OnInit {
   getFieldError(fieldName: string): string {
     const field = this.orderForm.get(fieldName);
     if (field?.hasError('required')) return 'Este campo es requerido';
+    if (field?.hasError('min')) return 'El valor debe ser mayor o igual a 0';
     return '';
   }
 
@@ -301,12 +227,25 @@ export class OrdersFormComponent implements OnInit {
     return !!(field?.invalid && (field?.dirty || field?.touched));
   }
 
-  getCustomerName(customer_id: string): string {
-    return this.customers().find(c => c.id === Number(customer_id))?.name || 'Desconocido';
+  getCustomerName(customerId: string): string {
+    return this.customers().find(c => c.id?.toString() === customerId)?.name || 'Desconocido';
   }
 
-  getRestaurantName(restaurant_id: string): string {
-    return this.restaurants().find(r => r.id === Number(restaurant_id))?.name || 'Desconocido';
+  getRestaurantName(restaurantId: string): string {
+    return this.restaurants().find(r => r.id?.toString() === restaurantId)?.name || 'Desconocido';
+  }
+
+  getMenuName(menuId: string): string {
+    return this.menus().find(m => m.id?.toString() === menuId)?.id.toString() || 'Ninguno';
+  }
+
+  getProductName(productId: string): string {
+    return this.products().find(p => p.id?.toString() === productId)?.name || 'Ninguno';
+  }
+
+  getMotorcycleName(motorcycle_id: string): string {
+    const motorcycle = this.motorcycles().find(m => m.id?.toString() === motorcycle_id);
+    return motorcycle ? `${motorcycle.brand} ${motorcycle.id} - ${motorcycle.license_plate}` : 'No asignado';
   }
 
   getStatusLabel(status: string): string {
@@ -321,13 +260,27 @@ export class OrdersFormComponent implements OnInit {
     return labels[status] || status;
   }
 
-  getMotorcycleName(motorcycle_id: string): string {
-    const motorcycle = this.motorcycles().find(m => m.id === Number(motorcycle_id));
-    return motorcycle ? `${motorcycle.id} - ${motorcycle.license_plate}` : 'No asignado';
+  getAvailableMotorcycles(): Motorcycle[] {
+    // Filtrar solo motocicletas disponibles
+    return this.motorcycles().filter(m => m.status === 'available');
   }
 
-  getAvailableMotorcycles(): Motorcycle[] {
-    // Aquí podrías filtrar solo los motociclistas disponibles
-    return this.motorcycles();
+  // Calcular total automáticamente basado en menú o producto seleccionado
+  updateTotal(): void {
+    let total = 0;
+    const menuId = this.orderForm.get('menu_id')?.value;
+    const productId = this.orderForm.get('product_id')?.value;
+
+    if (menuId) {
+      const menu = this.menus().find(m => m.id?.toString() === menuId);
+      if (menu?.price) total += menu.price;
+    }
+
+    if (productId) {
+      const product = this.products().find(p => p.id?.toString() === productId);
+      if (product?.price) total += product.price;
+    }
+
+    this.orderForm.patchValue({ total });
   }
 }

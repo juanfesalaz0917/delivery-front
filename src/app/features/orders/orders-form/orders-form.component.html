@@ -1,5 +1,5 @@
 <div class="min-h-screen bg-gray-50 py-8">
-  <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+  <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
     <!-- Header -->
     <div class="mb-8">
       <div class="flex items-center gap-4 mb-4">
@@ -24,16 +24,11 @@
 
     <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
       <!-- Main Form -->
-      <div class="lg:col-span-2 space-y-6">
-        <!-- Basic Info Card -->
+      <div class="lg:col-span-2">
         <div class="bg-white rounded-lg shadow-lg overflow-hidden">
-          <div class="p-6 border-b border-gray-200">
-            <h2 class="text-lg font-semibold text-gray-900">Información de la Orden</h2>
-          </div>
-          
-          <form [formGroup]="orderForm">
-            <div class="p-6 space-y-6">
-              <!-- Customer and Restaurant Grid -->
+          <form [formGroup]="orderForm" (ngSubmit)="onSubmit()">
+            <div class="p-6 sm:p-8 space-y-6">
+              <!-- Customer and Restaurant -->
               <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <!-- Customer Select -->
                 <div>
@@ -54,6 +49,9 @@
                   </select>
                   <p *ngIf="isFieldInvalid('customer_id')" class="mt-2 text-sm text-red-600">
                     {{ getFieldError('customer_id') }}
+                  </p>
+                  <p *ngIf="loadingCustomers()" class="mt-2 text-sm text-gray-500">
+                    Cargando clientes...
                   </p>
                 </div>
 
@@ -77,25 +75,73 @@
                   <p *ngIf="isFieldInvalid('restaurant_id')" class="mt-2 text-sm text-red-600">
                     {{ getFieldError('restaurant_id') }}
                   </p>
+                  <p *ngIf="loadingRestaurants()" class="mt-2 text-sm text-gray-500">
+                    Cargando restaurantes...
+                  </p>
                 </div>
               </div>
 
-              <!-- Motorcycle Select (Optional - Auto-assigned by system) -->
+              <!-- Menu and Product Selection -->
+              <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <!-- Menu Select -->
+                <div>
+                  <label for="menu_id" class="block text-sm font-medium text-gray-700 mb-2">
+                    Menú
+                  </label>
+                  <select
+                    id="menu_id"
+                    formControlName="menu_id"
+                    (change)="updateTotal()"
+                    class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+                  >
+                    <option value="">Ninguno</option>
+                    <option *ngFor="let menu of menus()" [value]="menu.id">
+                      {{ menu.id }} - ${{ menu.price }}
+                    </option>
+                  </select>
+                  <p class="mt-2 text-xs text-gray-500">
+                    Opcional: Selecciona un menú o un producto
+                  </p>
+                </div>
+
+                <!-- Product Select -->
+                <div>
+                  <label for="product_id" class="block text-sm font-medium text-gray-700 mb-2">
+                    Producto
+                  </label>
+                  <select
+                    id="product_id"
+                    formControlName="product_id"
+                    (change)="updateTotal()"
+                    class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+                  >
+                    <option value="">Ninguno</option>
+                    <option *ngFor="let product of products()" [value]="product.id">
+                      {{ product.name }} - ${{ product.price }}
+                    </option>
+                  </select>
+                  <p class="mt-2 text-xs text-gray-500">
+                    Opcional: Selecciona un producto individual
+                  </p>
+                </div>
+              </div>
+
+              <!-- Motorcycle Assignment -->
               <div class="bg-blue-50 border border-blue-200 rounded-lg p-4">
                 <div class="flex items-start gap-2 mb-3">
                   <svg class="w-5 h-5 text-blue-600 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                   </svg>
                   <div class="flex-1">
-                    <p class="text-sm font-medium text-blue-800">Asignación de Motociclista</p>
+                    <p class="text-sm font-medium text-blue-800">Asignación de Motocicleta</p>
                     <p class="text-xs text-blue-700 mt-1">
-                      El sistema asignará automáticamente un motociclista disponible. También puedes seleccionar uno manualmente si lo prefieres.
+                      El sistema asignará automáticamente una motocicleta disponible si no seleccionas una.
                     </p>
                   </div>
                 </div>
                 
                 <label for="motorcycle_id" class="block text-sm font-medium text-gray-700 mb-2">
-                  Motociclista (Opcional)
+                  Motocicleta (Opcional)
                 </label>
                 <select
                   id="motorcycle_id"
@@ -104,235 +150,117 @@
                 >
                   <option value="">Sistema asignará automáticamente</option>
                   <option *ngFor="let motorcycle of getAvailableMotorcycles()" [value]="motorcycle.id">
-                    {{ motorcycle.id }} - {{ motorcycle.license_plate }}
+                    {{ motorcycle.brand }} - {{ motorcycle.id }} - {{ motorcycle.license_plate }}
                   </option>
                 </select>
                 <p *ngIf="loadingMotorcycles()" class="mt-2 text-sm text-blue-600">
-                  Cargando motociclistas...
+                  Cargando motocicletas...
                 </p>
               </div>
 
-              <!-- Status Select -->
-              <div>
-                <label for="status" class="block text-sm font-medium text-gray-700 mb-2">
-                  Estado <span class="text-red-500">*</span>
-                </label>
-                <select
-                  id="status"
-                  formControlName="status"
-                  class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
-                >
-                  <option *ngFor="let status of orderStatuses" [value]="status">
-                    {{ getStatusLabel(status) }}
-                  </option>
-                </select>
-              </div>
-            </div>
-          </form>
-        </div>
-
-        <!-- Add Items Card -->
-        <div class="bg-white rounded-lg shadow-lg overflow-hidden">
-          <div class="p-6 border-b border-gray-200">
-            <h2 class="text-lg font-semibold text-gray-900">Agregar Items a la Orden</h2>
-            <p class="mt-1 text-sm text-gray-600">Selecciona menús o productos individuales</p>
-          </div>
-
-          <div class="p-6 space-y-6">
-            <!-- Add Menu -->
-            <div>
-              <label class="block text-sm font-medium text-gray-700 mb-2">
-                Agregar Menú
-              </label>
-              <div class="flex gap-3">
-                <select
-                  #menuSelect
-                  class="flex-1 px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
-                  [disabled]="!orderForm.get('restaurant_id')?.value || filteredMenus().length === 0"
-                >
-                  <option value="">
-                    {{ !orderForm.get('restaurant_id')?.value ? 'Primero selecciona un restaurante' : 'Selecciona un menú' }}
-                  </option>
-                  <option *ngFor="let menu of filteredMenus()" [value]="menu.id">
-                    {{ menu.id }} - ${{ menu.price }}
-                  </option>
-                </select>
-                <button
-                  type="button"
-                  (click)="addMenu(menuSelect.value); menuSelect.value = ''"
-                  class="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-                >
-                  Agregar
-                </button>
-              </div>
-            </div>
-
-            <!-- Add Product -->
-            <div>
-              <label class="block text-sm font-medium text-gray-700 mb-2">
-                Agregar Producto Individual
-              </label>
-              <div class="flex gap-3">
-                <select
-                  #productSelect
-                  class="flex-1 px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
-                >
-                  <option value="">Selecciona un producto</option>
-                  <option *ngFor="let product of products()" [value]="product.id">
-                    {{ product.name }} - ${{ product.price }}
-                  </option>
-                </select>
-                <button
-                  type="button"
-                  (click)="addProduct(productSelect.value); productSelect.value = ''"
-                  class="px-6 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-                >
-                  Agregar
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <!-- Order Items List -->
-        <div class="bg-white rounded-lg shadow-lg overflow-hidden">
-          <div class="p-6 border-b border-gray-200">
-            <h2 class="text-lg font-semibold text-gray-900">Items de la Orden</h2>
-          </div>
-
-          <div class="p-6">
-            <!-- Items List -->
-            <div *ngIf="selectedItems().length > 0" class="space-y-3">
-              <div
-                *ngFor="let item of selectedItems(); let i = index"
-                class="flex items-center gap-4 p-4 bg-gray-50 rounded-lg border border-gray-200"
-              >
-                <!-- Item Icon -->
-                <div
-                  class="flex-shrink-0 w-10 h-10 rounded-lg flex items-center justify-center"
-                  [class.bg-blue-100]="item.type === 'menu'"
-                  [class.bg-green-100]="item.type === 'product'"
-                >
-                  <svg
-                    *ngIf="item.type === 'menu'"
-                    class="w-5 h-5 text-blue-600"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
+              <!-- Status and Total -->
+              <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <!-- Status Select -->
+                <div>
+                  <label for="status" class="block text-sm font-medium text-gray-700 mb-2">
+                    Estado <span class="text-red-500">*</span>
+                  </label>
+                  <select
+                    id="status"
+                    formControlName="status"
+                    class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
                   >
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                  </svg>
-                  <svg
-                    *ngIf="item.type === 'product'"
-                    class="w-5 h-5 text-green-600"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
-                  </svg>
+                    <option *ngFor="let status of orderStatuses" [value]="status">
+                      {{ getStatusLabel(status) }}
+                    </option>
+                  </select>
                 </div>
 
-                <!-- Item Info -->
-                <div class="flex-1">
-                  <h3 class="font-medium text-gray-900">{{ item.item.id}}</h3>
-                  <p class="text-sm text-gray-500">
-                    {{ item.type === 'menu' ? 'Menú' : 'Producto' }} - ${{ item.item.price }}
+                <!-- Total -->
+                <div>
+                  <label for="total" class="block text-sm font-medium text-gray-700 mb-2">
+                    Total <span class="text-red-500">*</span>
+                  </label>
+                  <div class="relative">
+                    <span class="absolute left-4 top-3.5 text-gray-500">$</span>
+                    <input
+                      id="total"
+                      type="number"
+                      formControlName="total"
+                      placeholder="0.00"
+                      min="0"
+                      step="0.01"
+                      class="w-full pl-8 pr-4 py-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+                      [class.border-red-500]="isFieldInvalid('total')"
+                      [class.border-gray-300]="!isFieldInvalid('total')"
+                    />
+                  </div>
+                  <p *ngIf="isFieldInvalid('total')" class="mt-2 text-sm text-red-600">
+                    {{ getFieldError('total') }}
+                  </p>
+                  <p class="mt-2 text-xs text-gray-500">
+                    Se calcula automáticamente al seleccionar menú/producto
                   </p>
                 </div>
+              </div>
 
-                <!-- Quantity Control -->
-                <div class="flex items-center gap-2">
-                  <button
-                    type="button"
-                    (click)="updateQuantity(i, item.quantity - 1)"
-                    [disabled]="item.quantity <= 1"
-                    class="w-8 h-8 flex items-center justify-center bg-white border border-gray-300 rounded hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
-                  >
-                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 12H4" />
-                    </svg>
-                  </button>
-                  <input
-                    type="number"
-                    [value]="item.quantity"
-                    (change)="updateQuantity(i, +$any($event.target).value)"
-                    min="1"
-                    class="w-16 text-center px-2 py-1 border border-gray-300 rounded"
-                  />
-                  <button
-                    type="button"
-                    (click)="updateQuantity(i, item.quantity + 1)"
-                    class="w-8 h-8 flex items-center justify-center bg-white border border-gray-300 rounded hover:bg-gray-50"
-                  >
-                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
-                    </svg>
-                  </button>
-                </div>
+              <!-- Notes Field -->
+              <div>
+                <label for="notes" class="block text-sm font-medium text-gray-700 mb-2">
+                  Notas adicionales
+                </label>
+                <textarea
+                  id="notes"
+                  formControlName="notes"
+                  rows="3"
+                  placeholder="Instrucciones especiales, alergias, preferencias..."
+                  class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all resize-none"
+                ></textarea>
+              </div>
 
-                <!-- Subtotal -->
-                <div class="text-right">
-                  <p class="font-semibold text-gray-900">${{ item.item.price * item.quantity }}</p>
-                </div>
-
-                <!-- Remove Button -->
-                <button
-                  type="button"
-                  (click)="removeItem(i)"
-                  class="flex-shrink-0 text-red-600 hover:text-red-700 p-2 hover:bg-red-50 rounded-lg transition-colors"
-                >
-                  <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                  </svg>
-                </button>
+              <!-- Required Fields Note -->
+              <div class="flex items-start gap-2 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+                <svg class="w-5 h-5 text-blue-600 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+                <p class="text-sm text-blue-800">
+                  Los campos marcados con <span class="text-red-500">*</span> son obligatorios. Debes seleccionar al menos un menú o un producto.
+                </p>
               </div>
             </div>
 
-            <!-- Empty State -->
-            <div *ngIf="selectedItems().length === 0" class="text-center py-12">
-              <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z" />
-              </svg>
-              <p class="mt-4 text-sm text-gray-500">No hay items en la orden</p>
-              <p class="mt-1 text-xs text-gray-400">Agrega menús o productos arriba</p>
-            </div>
-          </div>
-        </div>
-
-        <!-- Form Actions -->
-        <div class="bg-white rounded-lg shadow-lg p-6">
-          <div class="flex flex-col-reverse sm:flex-row sm:justify-end gap-3">
-            <button
-              type="button"
-              (click)="onCancel()"
-              [disabled]="loading()"
-              class="w-full sm:w-auto px-6 py-3 border border-gray-300 text-sm font-medium rounded-lg text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              Cancelar
-            </button>
-            <button
-              type="button"
-              (click)="onSubmit()"
-              [disabled]="loading() || orderForm.invalid || selectedItems().length === 0"
-              class="w-full sm:w-auto px-6 py-3 border border-transparent text-sm font-medium rounded-lg text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center"
-            >
-              <svg
-                *ngIf="loading()"
-                class="animate-spin -ml-1 mr-3 h-5 w-5 text-white"
-                fill="none"
-                viewBox="0 0 24 24"
+            <!-- Form Actions -->
+            <div class="bg-gray-50 px-6 py-4 sm:px-8 flex flex-col-reverse sm:flex-row sm:justify-end gap-3">
+              <button
+                type="button"
+                (click)="onCancel()"
+                [disabled]="loading()"
+                class="w-full sm:w-auto px-6 py-3 border border-gray-300 text-sm font-medium rounded-lg text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-                <path
-                  class="opacity-75"
-                  fill="currentColor"
-                  d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-                ></path>
-              </svg>
-              {{ loading() ? 'Guardando...' : (isEditMode() ? 'Actualizar Orden' : 'Crear Orden') }}
-            </button>
-          </div>
+                Cancelar
+              </button>
+              <button
+                type="submit"
+                [disabled]="loading() || orderForm.invalid"
+                class="w-full sm:w-auto px-6 py-3 border border-transparent text-sm font-medium rounded-lg text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center"
+              >
+                <svg
+                  *ngIf="loading()"
+                  class="animate-spin -ml-1 mr-3 h-5 w-5 text-white"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                >
+                  <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                  <path
+                    class="opacity-75"
+                    fill="currentColor"
+                    d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                  ></path>
+                </svg>
+                {{ loading() ? 'Guardando...' : (isEditMode() ? 'Actualizar Orden' : 'Crear Orden') }}
+              </button>
+            </div>
+          </form>
         </div>
       </div>
 
@@ -357,19 +285,34 @@
               </p>
             </div>
 
+            <div *ngIf="orderForm.get('menu_id')?.value" class="pb-3 border-b border-gray-200">
+              <p class="text-xs text-gray-500 mb-1">Menú:</p>
+              <p class="text-sm font-medium text-gray-900">
+                {{ getMenuName(orderForm.get('menu_id')?.value) }}
+              </p>
+            </div>
+
+            <div *ngIf="orderForm.get('product_id')?.value" class="pb-3 border-b border-gray-200">
+              <p class="text-xs text-gray-500 mb-1">Producto:</p>
+              <p class="text-sm font-medium text-gray-900">
+                {{ getProductName(orderForm.get('product_id')?.value) }}
+              </p>
+            </div>
+
             <div *ngIf="orderForm.get('motorcycle_id')?.value" class="pb-3 border-b border-gray-200">
-              <p class="text-xs text-gray-500 mb-1">Motociclista:</p>
+              <p class="text-xs text-gray-500 mb-1">Motocicleta:</p>
               <div class="flex items-center gap-2">
                 <svg class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z" />
                 </svg>
                 <p class="text-sm font-medium text-gray-900">
                   {{ getMotorcycleName(orderForm.get('motorcycle_id')?.value) }}
                 </p>
               </div>
             </div>
+            
             <div *ngIf="!orderForm.get('motorcycle_id')?.value" class="pb-3 border-b border-gray-200">
-              <p class="text-xs text-gray-500 mb-1">Motociclista:</p>
+              <p class="text-xs text-gray-500 mb-1">Motocicleta:</p>
               <p class="text-sm font-medium text-blue-600 flex items-center gap-1">
                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
@@ -397,21 +340,10 @@
               </span>
             </div>
 
-            <div class="pb-3 border-b border-gray-200">
-              <div class="flex justify-between text-sm mb-2">
-                <span class="text-gray-600">Items:</span>
-                <span class="font-medium">{{ selectedItems().length }}</span>
-              </div>
-              <div class="flex justify-between text-sm">
-                <span class="text-gray-600">Cantidad total:</span>
-                <span class="font-medium">{{ getTotalQuantity() }}</span>
-              </div>
-            </div>
-
             <div class="pt-3">
               <div class="flex justify-between items-center">
                 <span class="text-lg font-semibold text-gray-900">Total:</span>
-                <span class="text-2xl font-bold text-blue-600">${{ calculateTotal() }}</span>
+                <span class="text-2xl font-bold text-blue-600">${{ orderForm.get('total')?.value || 0 }}</span>
               </div>
             </div>
           </div>
@@ -428,15 +360,19 @@
           <ul class="text-sm text-gray-700 space-y-2">
             <li class="flex items-start gap-2">
               <span class="text-blue-600 mt-0.5">•</span>
-              <span>Selecciona primero el restaurante para ver sus menús</span>
+              <span>Selecciona el cliente y restaurante</span>
             </li>
             <li class="flex items-start gap-2">
               <span class="text-blue-600 mt-0.5">•</span>
-              <span>Puedes combinar menús y productos individuales</span>
+              <span>Elige un menú o producto individual</span>
             </li>
             <li class="flex items-start gap-2">
               <span class="text-blue-600 mt-0.5">•</span>
-              <span>Ajusta las cantidades según sea necesario</span>
+              <span>El total se calcula automáticamente</span>
+            </li>
+            <li class="flex items-start gap-2">
+              <span class="text-blue-600 mt-0.5">•</span>
+              <span>La motocicleta se asigna automáticamente si no la seleccionas</span>
             </li>
           </ul>
         </div>

@@ -232,3 +232,49 @@ export interface PaginatedResponse<T> {
   limit: number
   totalPages: number
 }
+
+// Modelo de ubicación de motocicleta
+export interface MotorcycleLocation {
+  motorcycle_id: string;
+  driver_name: string;
+  license_plate: string;
+  latitude: number;
+  longitude: number;
+  speed: number; // km/h
+  heading: number; // grados (0-360)
+  last_update: Date;
+  status: 'idle' | 'picking_up' | 'delivering' | 'offline';
+  current_order_id?: string;
+}
+
+// Modelo de orden activa en el mapa
+export interface ActiveOrder {
+  order_id: string;
+  motorcycle_id: string;
+  customer_name: string;
+  restaurant: string;
+  restaurant_location: { lat: number; lng: number };
+  delivery_location: { lat: number; lng: number };
+  status: 'pending' | 'picked_up' | 'on_route' | 'delivered';
+  estimated_time: number; // minutos
+  total: number;
+}
+
+// Modelo de ruta
+export interface Route {
+  order_id: string;
+  motorcycle_id: string;
+  waypoints: { lat: number; lng: number }[];
+  distance: number; // km
+  duration: number; // minutos
+}
+
+// Evento de actualización de ubicación
+export interface LocationUpdateEvent {
+  motorcycle_id: string;
+  latitude: number;
+  longitude: number;
+  speed: number;
+  heading: number;
+  timestamp: Date;
+}
